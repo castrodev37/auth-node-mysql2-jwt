@@ -1,10 +1,11 @@
 const db = require('../../database/connection')
 const jwt = require('jsonwebtoken')
 const authCfg = require('../../config/auth.json')
+const bcrypt = require('bcryptjs')
 
 function setToken(params={}){
   return jwt.sign(params, authCfg.secret, {
-    expiresIn: 7200 // * 1 hora
+    expiresIn: 7200 // * 2 horas
   })
 }
 
@@ -32,6 +33,27 @@ module.exports = {
       
     } catch (e) {
       return res.status(400).json({error: e.message})      
+    }
+  },
+
+ async authUser(req, res){
+    const conn = await db()
+    try {
+      const [row] = await conn.query('SELECT * FROM users WHERE email=?', [req.body.email])
+      
+      if(!row[0]) return res.status(400).json({error: 'User not found...'})
+      if(!await bcrypt.compare(req.body.password, row[0].password ))
+        return res.status(400).json({error: 'Invalid password...'})
+
+      row[0].password = undefined
+
+      return res.json({
+        user: row[0],
+        token: setToken({ id: row[0].id })
+      })
+
+    } catch (e) {
+      return res.status(400).json({error: e.message})   
     }
   },
 
