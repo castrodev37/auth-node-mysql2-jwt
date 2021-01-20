@@ -1,5 +1,6 @@
 const express = require('express')
 const routes = require('./routes')
+const hbs = require('nodemailer-express-handlebars')
 
 const app = express()
 

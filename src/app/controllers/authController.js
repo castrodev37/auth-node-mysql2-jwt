@@ -1,7 +1,10 @@
 const db = require('../../database/connection')
 const jwt = require('jsonwebtoken')
-const authCfg = require('../../config/auth.json')
+const authCfg = require('../../../config/auth.json')
 const bcrypt = require('bcryptjs')
+const crypto = require('crypto')
+const mailer = require('../../modules/mailer')
+const { send } = require('process')
 
 function setToken(params={}){
   return jwt.sign(params, authCfg.secret, {
@@ -36,7 +39,7 @@ module.exports = {
     }
   },
 
- async authUser(req, res){
+  async authUser(req, res){
     const conn = await db()
     try {
       const [row] = await conn.query('SELECT * FROM users WHERE email=?', [req.body.email])
@@ -56,6 +59,36 @@ module.exports = {
       return res.status(400).json({error: e.message})   
     }
   },
+
+  async forgotPassword(req, res){
+    const conn = await db()
+    
+    try {
+      const [checkUser] = await conn.query('SELECT * FROM users WHERE email=?', [req.body.email]) 
+      if(!checkUser) return res.status(400).json({error:'User not found...'})
+
+      const token = crypto.randomBytes(20).toString('HEX')
+      const now = new Date()
+      now.setHours(now.getMinutes + 40)
+
+      const fillUpPassAndExpFields = await conn.query('UPDATE users SET passwordResetToken=?, expiresResetPassword=? WHERE id=?', [token, now, checkUser[0].id ])
+      
+      mailer.sendMail({
+        to: req.body.email,
+        from: 'foo@contact.com',
+        template: 'main',
+        context: { token }
+        
+      }, err=>{
+        console.log(err);
+        if(err) return res.status(400).send({error: 'There was an internal error. Please, try again.'})
+        return res.send()
+      })
+
+    } catch (e) {
+      return res.status(400).send({error: 'Operation doesn\'t work. Please, try again.'})
+    }
+  }
 
   // async createDB(req, res){
   //   const conn = await db()
