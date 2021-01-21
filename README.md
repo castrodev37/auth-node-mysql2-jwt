@@ -1,9 +1,10 @@
 # API com autenticação de usuário
 
-1. Stack
+1. Stacks
 
-- NodeJS
-- Express
-- JWT
-- Mysql2 (Promise)
+  - NodeJS
+  - Express
+  - JWT
+  - Mysql2 (Promise)
+
 

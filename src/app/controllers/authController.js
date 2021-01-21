@@ -69,7 +69,7 @@ module.exports = {
 
       const token = crypto.randomBytes(20).toString('HEX')
       const now = new Date()
-      now.setHours(now.getMinutes + 40)
+      now.setMinutes(now.getMinutes() + 30)
 
       const fillUpPassAndExpFields = await conn.query('UPDATE users SET passwordResetToken=?, expiresResetPassword=? WHERE id=?', [token, now, checkUser[0].id ])
       
@@ -80,13 +80,35 @@ module.exports = {
         context: { token }
         
       }, err=>{
-        console.log(err);
         if(err) return res.status(400).send({error: 'There was an internal error. Please, try again.'})
         return res.send()
       })
 
     } catch (e) {
       return res.status(400).send({error: 'Operation doesn\'t work. Please, try again.'})
+    }
+  },
+
+  async resetPassword(req, res){
+    const conn = await db()
+    try {
+      const [ chkUsrToResPwd ] = await conn.query('SELECT * FROM users WHERE email=?', [req.body.email])
+
+      if(!chkUsrToResPwd[0]) return res.status(400).send({error:'User not found...'})
+      
+      if(req.body.token !== chkUsrToResPwd[0].passwordResetToken)
+        return res.status(400).send({error:'Token invalid...'})
+      const tmExpComp = new Date()
+      
+      if(tmExpComp > chkUsrToResPwd[0].expiresResetPassword)
+        return res.status(400).send({error:'Expired token...'})
+
+      await conn.query('UPDATE users SET password=? WHERE id=?', [req.body.password, chkUsrToResPwd[0].id])
+
+      return res.send({response: 'Password changed successfuly!'})
+
+    } catch (e) {
+      return res.status(400).send({error:'Operation failed. Please, try again.'})
     }
   }
 

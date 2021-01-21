@@ -6,6 +6,7 @@ const authController = require('./app/controllers/authController')
 routes.post('/users', authController.createUser)
 routes.post('/users/auth', authController.authUser)
 routes.post('/password', authController.forgotPassword)
+routes.post('/password/new', authController.resetPassword)
 
 // ? Para fins didáticos de criação do db e da tabela, pois podem ser criados no workbench 
 // routes.post('/db', authController.createDB)
